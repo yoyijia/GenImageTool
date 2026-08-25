@@ -1,4 +1,5 @@
 import { getAspect, getStyle, VERSION_ANGLES } from "./catalog";
+import { SFW_PROMPT_GUARD } from "./safety";
 import type { CampaignBrief, GeneratedImage } from "../types";
 
 export function buildImagePrompt(
@@ -17,6 +18,7 @@ export function buildImagePrompt(
     style.prompt,
     angle,
     "photogenic marketing campaign still, no watermark, no UI text",
+    SFW_PROMPT_GUARD,
   ]
     .filter(Boolean)
     .join(", ");
@@ -33,6 +35,7 @@ export function buildImageUrl(
     height: String(height),
     seed: String(seed),
     nologo: "true",
+    safe: "true",
   });
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params}`;
 }

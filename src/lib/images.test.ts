@@ -20,6 +20,7 @@ describe("createVersions", () => {
     expect(new Set(images.map((image) => image.seed)).size).toBe(4);
     expect(images[0].url).toContain("image.pollinations.ai/prompt/");
     expect(images[0].url).toContain("seed=");
+    expect(images[0].url).toContain("safe=true");
     expect(images[0].width).toBe(1024);
   });
 
@@ -28,6 +29,7 @@ describe("createVersions", () => {
     const second = buildImagePrompt(brief, 1);
     expect(first).toContain("Kima");
     expect(first).toContain("lifestyle photography");
+    expect(first).toContain("safe for work");
     expect(first).not.toBe(second);
   });
 

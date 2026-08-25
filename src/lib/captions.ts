@@ -261,7 +261,7 @@ async function requestOpenAiCaptions(
         {
           role: "system",
           content:
-            "You are a senior social copywriter. Return JSON only with keys instagram, linkedin, x, overlay, hashtags (array). No markdown.",
+            "You are a senior social copywriter for a safe-for-work marketing studio. Never write sexual, nude, or x-rated copy. Return JSON only with keys instagram, linkedin, x, overlay, hashtags (array). No markdown.",
         },
         {
           role: "user",
@@ -290,7 +290,7 @@ async function requestPollinationsCaptions(
   image: GeneratedImage,
 ): Promise<CaptionSet | null> {
   const fallback = composeCaptions(brief, image);
-  const instruction = `Return JSON only with keys instagram, linkedin, x, overlay, hashtags. Voice=${brief.voice}. Brand=${brief.brand || "none"}. Prompt=${brief.prompt}. Style=${getStyle(brief.styleId).name}. CTA=${brief.cta || "none"}.`;
+  const instruction = `Safe for work only, no sexual or x-rated copy. Return JSON only with keys instagram, linkedin, x, overlay, hashtags. Voice=${brief.voice}. Brand=${brief.brand || "none"}. Prompt=${brief.prompt}. Style=${getStyle(brief.styleId).name}. CTA=${brief.cta || "none"}.`;
   const response = await fetch(
     `https://text.pollinations.ai/${encodeURIComponent(instruction)}?json=true`,
     { referrerPolicy: "no-referrer" },

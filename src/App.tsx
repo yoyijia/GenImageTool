@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ASPECTS, STYLES, VOICES, getAspect, getStyle } from "./lib/catalog";
 import { generateCaptionsForSelection } from "./lib/captions";
 import { createVersions, downloadImage, retryVersion } from "./lib/images";
+import { SFW_BLOCK_MESSAGE, isXRatedPrompt } from "./lib/safety";
 import type {
   AspectId,
   BrandVoice,
@@ -85,6 +86,10 @@ export default function App() {
       setError("Add a prompt describing what you want to see.");
       return;
     }
+    if (isXRatedPrompt(brief.prompt, brief.brand, brief.audience, brief.cta)) {
+      setError(SFW_BLOCK_MESSAGE);
+      return;
+    }
     setError("");
     setBusy("images");
     setCaptions([]);
@@ -137,6 +142,10 @@ export default function App() {
   async function writeCaptions() {
     if (!selectedImages.length) {
       setError("Select the versions you want before writing captions.");
+      return;
+    }
+    if (isXRatedPrompt(brief.prompt, brief.brand, brief.audience, brief.cta)) {
+      setError(SFW_BLOCK_MESSAGE);
       return;
     }
     setError("");
@@ -202,7 +211,7 @@ export default function App() {
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-muted">
               Describe the shot, pick a visual world, generate a few versions, then lock your
-              favorites and we will write the posts.
+              favorites and we will write the posts. Safe for work only — X-rated prompts are blocked.
             </p>
           </div>
 
