@@ -54,7 +54,7 @@ export default function App() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loadedIds, setLoadedIds] = useState<string[]>([]);
   const [failedIds, setFailedIds] = useState<string[]>([]);
-  const [retryCounts, setRetryCounts] = useState<Record<string, number>>({});
+  const [, setRetryCounts] = useState<Record<string, number>>({});
   const [captions, setCaptions] = useState<CaptionSet[]>([]);
   const [captionSource, setCaptionSource] = useState<"ai" | "studio" | null>(null);
   const [activeCaption, setActiveCaption] = useState<"instagram" | "linkedin" | "x">("instagram");
@@ -100,25 +100,32 @@ export default function App() {
   }
 
   function retryImage(id: string) {
-    setImages((current) =>
-      current.map((image) => {
-        if (image.id !== id) return image;
-        const attempt = (retryCounts[id] ?? 0) + 1;
-        return retryVersion(image, attempt);
-      }),
-    );
-    setRetryCounts((current) => ({ ...current, [id]: (current[id] ?? 0) + 1 }));
+    setRetryCounts((current) => {
+      const attempt = (current[id] ?? 0) + 1;
+      setImages((images) =>
+        images.map((image) => (image.id === id ? retryVersion(image, attempt) : image)),
+      );
+      return { ...current, [id]: attempt };
+    });
     setFailedIds((current) => current.filter((item) => item !== id));
     setLoadedIds((current) => current.filter((item) => item !== id));
   }
 
   function handleImageError(id: string) {
-    const attempt = retryCounts[id] ?? 0;
-    if (attempt < 3) {
-      retryImage(id);
-      return;
-    }
-    setFailedIds((current) => (current.includes(id) ? current : [...current, id]));
+    setRetryCounts((current) => {
+      const attempt = current[id] ?? 0;
+      if (attempt < 3) {
+        const next = attempt + 1;
+        setImages((images) =>
+          images.map((image) => (image.id === id ? retryVersion(image, next) : image)),
+        );
+        setFailedIds((ids) => ids.filter((item) => item !== id));
+        setLoadedIds((ids) => ids.filter((item) => item !== id));
+        return { ...current, [id]: next };
+      }
+      setFailedIds((ids) => (ids.includes(id) ? ids : [...ids, id]));
+      return current;
+    });
   }
 
   function toggleSelect(id: string) {
