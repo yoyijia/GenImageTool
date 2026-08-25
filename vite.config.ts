@@ -4,7 +4,8 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: process.env.GITHUB_PAGES === "true" ? "/GenImageTool/" : "/",
+  // Relative paths so the built app works on GitHub Pages, jsDelivr, and any subfolder.
+  base: "./",
   server: {
     host: "0.0.0.0",
     port: 5173,

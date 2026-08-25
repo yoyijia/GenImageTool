@@ -4,6 +4,10 @@ Your AI marketing assistant: write a prompt, pick a visual style, generate a few
 
 ## Website
 
+**https://raw.githack.com/yoyijia/GenImageTool/cursor/marketing-assistant-ef37/docs/index.html**
+
+GitHub Pages (after Pages is turned on for this repo):
+
 **https://yoyijia.github.io/GenImageTool/**
 
 ## What it does
