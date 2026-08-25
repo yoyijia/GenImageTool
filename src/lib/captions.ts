@@ -61,8 +61,10 @@ function brandOrFallback(brief: CampaignBrief): string {
 
 function subjectLine(brief: CampaignBrief): string {
   const trimmed = brief.prompt.trim().replace(/[.!?]+$/, "");
-  if (trimmed.length <= 72) return trimmed;
-  return `${trimmed.slice(0, 69).trim()}…`;
+  const firstClause = trimmed.split(",")[0]?.trim() || trimmed;
+  const scene =
+    firstClause.length <= 72 ? firstClause : `${firstClause.slice(0, 69).trim()}…`;
+  return scene.replace(/^(A|An|The)\s+/, (match) => match.toLowerCase());
 }
 
 function pick<T>(items: T[], seed: number, offset = 0): T {

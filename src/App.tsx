@@ -114,7 +114,7 @@ export default function App() {
 
   function handleImageError(id: string) {
     const attempt = retryCounts[id] ?? 0;
-    if (attempt < 2) {
+    if (attempt < 3) {
       retryImage(id);
       return;
     }
