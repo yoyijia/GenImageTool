@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #0c0b0a;
+  --color-ink-soft: #161412;
+  --color-panel: #1b1916;
+  --color-line: rgba(231, 201, 161, 0.16);
+  --color-cream: #f4efe6;
+  --color-muted: #b9b1a4;
+  --color-gold: #e7c9a1;
+  --color-gold-deep: #c9a06a;
+  --color-blush: #d98b73;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(1200px 700px at 12% -10%, #2a2218 0%, transparent 55%),
+    radial-gradient(900px 600px at 110% 8%, #2a1814 0%, transparent 46%),
+    var(--color-ink);
+  color: var(--color-cream);
+  font-family: var(--font-sans);
+  letter-spacing: 0.01em;
+}
+
+::selection {
+  background: rgba(231, 201, 161, 0.28);
+  color: var(--color-cream);
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(231, 201, 161, 0.28) transparent;
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.skeleton {
+  animation: pulse-soft 1.6s ease-in-out infinite;
+  background: linear-gradient(90deg, #211e1a, #2a261f 50%, #211e1a);
+  background-size: 200% 100%;
+}
