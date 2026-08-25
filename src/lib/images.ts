@@ -16,7 +16,7 @@ export function buildImagePrompt(
     audience ? `designed to appeal to ${audience}` : "",
     style.prompt,
     angle,
-    "no watermark, no UI, no captions, no logos unless naturally part of the product, photogenic, high detail, marketing campaign still",
+    "photogenic marketing campaign still, no watermark, no UI text",
   ]
     .filter(Boolean)
     .join(", ");
@@ -33,8 +33,6 @@ export function buildImageUrl(
     height: String(height),
     seed: String(seed),
     nologo: "true",
-    enhance: "true",
-    private: "true",
   });
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params}`;
 }
@@ -57,6 +55,15 @@ export function createVersions(
       height: aspect.height,
     };
   });
+}
+
+export function retryVersion(image: GeneratedImage, attempt: number): GeneratedImage {
+  const seed = image.seed + attempt * 4243;
+  return {
+    ...image,
+    seed,
+    url: buildImageUrl(image.prompt, seed, image.width, image.height),
+  };
 }
 
 export async function downloadImage(image: GeneratedImage): Promise<void> {

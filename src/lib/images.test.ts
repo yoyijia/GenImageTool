@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildImagePrompt, createVersions } from "./images";
+import { buildImagePrompt, createVersions, retryVersion } from "./images";
 import type { CampaignBrief } from "../types";
 
 const brief: CampaignBrief = {
@@ -29,5 +29,13 @@ describe("createVersions", () => {
     expect(first).toContain("Kima");
     expect(first).toContain("lifestyle photography");
     expect(first).not.toBe(second);
+  });
+
+  it("retries a version with a new seed and url", () => {
+    const [image] = createVersions(brief, 100);
+    const retried = retryVersion(image, 1);
+    expect(retried.seed).not.toBe(image.seed);
+    expect(retried.url).not.toBe(image.url);
+    expect(retried.id).toBe(image.id);
   });
 });

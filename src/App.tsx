@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ASPECTS, STYLES, VOICES, getAspect, getStyle } from "./lib/catalog";
 import { generateCaptionsForSelection } from "./lib/captions";
-import { createVersions, downloadImage } from "./lib/images";
+import { createVersions, downloadImage, retryVersion } from "./lib/images";
 import type {
   AspectId,
   BrandVoice,
@@ -54,6 +54,7 @@ export default function App() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loadedIds, setLoadedIds] = useState<string[]>([]);
   const [failedIds, setFailedIds] = useState<string[]>([]);
+  const [retryCounts, setRetryCounts] = useState<Record<string, number>>({});
   const [captions, setCaptions] = useState<CaptionSet[]>([]);
   const [captionSource, setCaptionSource] = useState<"ai" | "studio" | null>(null);
   const [activeCaption, setActiveCaption] = useState<"instagram" | "linkedin" | "x">("instagram");
@@ -91,10 +92,33 @@ export default function App() {
     setSelectedIds([]);
     setLoadedIds([]);
     setFailedIds([]);
+    setRetryCounts({});
     const next = createVersions(brief);
     setImages(next);
     setStage("review");
     setBusy(null);
+  }
+
+  function retryImage(id: string) {
+    setImages((current) =>
+      current.map((image) => {
+        if (image.id !== id) return image;
+        const attempt = (retryCounts[id] ?? 0) + 1;
+        return retryVersion(image, attempt);
+      }),
+    );
+    setRetryCounts((current) => ({ ...current, [id]: (current[id] ?? 0) + 1 }));
+    setFailedIds((current) => current.filter((item) => item !== id));
+    setLoadedIds((current) => current.filter((item) => item !== id));
+  }
+
+  function handleImageError(id: string) {
+    const attempt = retryCounts[id] ?? 0;
+    if (attempt < 2) {
+      retryImage(id);
+      return;
+    }
+    setFailedIds((current) => (current.includes(id) ? current : [...current, id]));
   }
 
   function toggleSelect(id: string) {
@@ -162,7 +186,8 @@ export default function App() {
       </header>
 
       <main className="grid gap-6 px-5 py-6 lg:grid-cols-[360px_minmax(0,1fr)] lg:px-8">
-        <aside className="scrollbar-thin h-fit space-y-5 rounded-[28px] border border-line bg-panel/80 p-5 lg:sticky lg:top-5">
+        <aside className="flex h-fit max-h-[calc(100vh-6.5rem)] flex-col overflow-hidden rounded-[28px] border border-line bg-panel/80 lg:sticky lg:top-5">
+          <div className="scrollbar-thin space-y-5 overflow-y-auto p-5">
           <div>
             <p className="text-[11px] uppercase tracking-[0.2em] text-gold">Campaign brief</p>
             <h1 className="mt-2 font-display text-3xl leading-tight">
@@ -179,7 +204,7 @@ export default function App() {
             <textarea
               value={brief.prompt}
               onChange={(event) => update("prompt", event.target.value)}
-              rows={5}
+              rows={3}
               className="w-full resize-y rounded-2xl border border-line bg-ink-soft px-4 py-3 text-sm leading-relaxed text-cream outline-none focus:border-gold/50"
               placeholder="What should the image look like?"
             />
@@ -248,18 +273,18 @@ export default function App() {
                   type="button"
                   onClick={() => update("styleId", item.id as StyleId)}
                   className={classNames(
-                    "rounded-2xl border p-3 text-left",
+                    "rounded-2xl border p-2.5 text-left",
                     brief.styleId === item.id
                       ? "border-gold/70 bg-gold/10"
                       : "border-line hover:border-gold/30",
                   )}
                 >
                   <span
-                    className="mb-2 block h-8 rounded-xl"
+                    className="mb-1.5 block h-6 rounded-lg"
                     style={{ background: item.swatch }}
                   />
-                  <span className="block text-sm text-cream">{item.name}</span>
-                  <span className="block text-[11px] text-muted">{item.hint}</span>
+                  <span className="block text-[13px] text-cream">{item.name}</span>
+                  <span className="block text-[10px] text-muted">{item.hint}</span>
                 </button>
               ))}
             </div>
@@ -297,15 +322,18 @@ export default function App() {
           </div>
 
           {error ? <p className="text-sm text-blush">{error}</p> : null}
+          </div>
 
-          <button
-            type="button"
-            onClick={generateImages}
-            disabled={busy === "images"}
-            className="w-full rounded-full bg-gold py-3 text-sm font-medium tracking-wide text-ink hover:bg-gold-deep disabled:opacity-60"
-          >
-            {busy === "images" ? "Composing…" : `Generate ${brief.versionCount} versions`}
-          </button>
+          <div className="border-t border-line p-4">
+            <button
+              type="button"
+              onClick={generateImages}
+              disabled={busy === "images"}
+              className="w-full rounded-full bg-gold py-3 text-sm font-medium tracking-wide text-ink hover:bg-gold-deep disabled:opacity-60"
+            >
+              {busy === "images" ? "Composing…" : `Generate ${brief.versionCount} versions`}
+            </button>
+          </div>
         </aside>
 
         <section className="space-y-5">
@@ -359,11 +387,7 @@ export default function App() {
                         selected ? "border-gold ring-1 ring-gold/40" : "border-line",
                       )}
                     >
-                      <button
-                        type="button"
-                        onClick={() => toggleSelect(image.id)}
-                        className="relative block w-full"
-                      >
+                      <div className="relative">
                         {!loaded && !failed ? (
                           <div
                             className="skeleton w-full"
@@ -372,44 +396,50 @@ export default function App() {
                         ) : null}
                         {failed ? (
                           <div
-                            className="flex items-center justify-center bg-ink-soft text-sm text-muted"
+                            className="flex flex-col items-center justify-center gap-3 bg-ink-soft px-6 text-center text-sm text-muted"
                             style={{ aspectRatio: `${image.width} / ${image.height}` }}
                           >
-                            This version did not render. Generate again?
+                            <p>This version did not render.</p>
+                            <button
+                              type="button"
+                              onClick={() => retryImage(image.id)}
+                              className="rounded-full bg-gold px-4 py-1.5 text-xs uppercase tracking-[0.14em] text-ink"
+                            >
+                              Retry this version
+                            </button>
                           </div>
                         ) : (
-                          <img
-                            src={image.url}
-                            alt={image.versionLabel}
-                            referrerPolicy="no-referrer"
-                            onLoad={() =>
-                              setLoadedIds((current) =>
-                                current.includes(image.id) ? current : [...current, image.id],
-                              )
-                            }
-                            onError={() =>
-                              setFailedIds((current) =>
-                                current.includes(image.id) ? current : [...current, image.id],
-                              )
-                            }
-                            className={classNames(
-                              "w-full object-cover",
-                              loaded ? "block" : "hidden",
-                            )}
-                          />
+                          <button type="button" onClick={() => toggleSelect(image.id)} className="block w-full">
+                            <img
+                              key={image.url}
+                              src={image.url}
+                              alt={image.versionLabel}
+                              referrerPolicy="no-referrer"
+                              onLoad={() =>
+                                setLoadedIds((current) =>
+                                  current.includes(image.id) ? current : [...current, image.id],
+                                )
+                              }
+                              onError={() => handleImageError(image.id)}
+                              className={classNames(
+                                "w-full object-cover",
+                                loaded ? "block" : "hidden",
+                              )}
+                            />
+                          </button>
                         )}
-                        <span className="absolute left-3 top-3 rounded-full bg-ink/75 px-3 py-1 text-[11px] uppercase tracking-[0.14em]">
+                        <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-ink/75 px-3 py-1 text-[11px] uppercase tracking-[0.14em]">
                           {image.versionLabel}
                         </span>
                         <span
                           className={classNames(
-                            "absolute right-3 top-3 rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.14em]",
+                            "pointer-events-none absolute right-3 top-3 rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.14em]",
                             selected ? "bg-gold text-ink" : "bg-ink/75 text-cream",
                           )}
                         >
                           {selected ? "Selected" : "Select"}
                         </span>
-                      </button>
+                      </div>
                       <div className="flex items-center justify-between px-4 py-3 text-xs text-muted">
                         <span>Seed {image.seed}</span>
                         <button
